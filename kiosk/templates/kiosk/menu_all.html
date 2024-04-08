@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+
+{% block title %} 주문 {% endblock %}
+
+{% block extra-style %}
+<style type="text/css">
+.card {
+  margin: 10px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<button type="submit" class="btn btn-primary" id="liveAlertBtn">
+  테스트
+</button>
+
+<div class="container">
+  <h2>주문 페이지</h2>
+  <div class="row">
+    {% for menu in menus %}
+    <div class="col-md-4">
+      <div class="card">
+        <img class="card-img-top" src="{{ menu.image.url }}" alt="{{ menu.menu }}">
+        <div class="card-body">
+          <h4 class="card-title">{{ menu.menu }}</h4>
+          <p class="card-text text-end"> {{ menu.price }}원</p>
+          <!-- <form method="POST" action="{% url 'kiosk:add_to_cart' %}"> -->
+          <form id="orderForm_{{ menu.id }}" data-menu-id="{{ menu.id }}">
+            {% csrf_token %}
+            <input type="hidden" name="menu_id" value="{{ menu.id }}">
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" class="btn btn-primary" id="orderBtn_{{ menu.id }}">
+              주문하기
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <hr>
+
+  <h3>주문 내역</h3>
+  <div id="liveAlertPlaceholder"></div>
+  <ul id="orderList">
+    <!-- 주문 내역을 동적으로 추가할 위치 -->
+  </ul>
+  <ul>
+    {% for order_item in order_items %}
+    <li>{{ order_item.menu.menu }}: {{ order_item.quantity }}개</li>
+    {% endfor %}
+  </ul>
+  <p id="totalPrice">총 가격: {{ total_price }}원</p>
+  <!-- <form method="POST" action="{% url 'kiosk:process_order' %}"> -->
+  <form id="paymentForm">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary" id="paymentBtn">
+      결제하기
+    </button>
+  </form>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const orderButtons = document.querySelectorAll('[id^="orderBtn_"]');
+
+    orderButtons.forEach(button => {
+        button.addEventListener('click', function(event) {
+            event.preventDefault(); // 기본 동작(페이지 이동) 방지
+
+            const formId = button.getAttribute('id').split('_')[1]; // 버튼의 아이디에서 메뉴 ID 추출
+            const form = document.getElementById('orderForm_' + formId);
+            const formData = new FormData(form);
+
+            fetch('{% url "kiosk:add_to_cart" %}', {
+                method: 'POST',
+                body: formData,
+            })
+            .then(response => {
+                return response.text(); // 텍스트 형식의 응답을 받음
+            })
+            .then(data => {
+                alert(data); // 결과를 경고창으로 표시
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            });
+        });
+    });
+});
+  // 결제하기 버튼 클릭 시의 동작
+  const paymentBtn = document.getElementById('paymentBtn');
+  paymentBtn.addEventListener('click', (event) => {
+    event.preventDefault(); // 기본 동작(페이지 이동) 방지
+
+    // 결제 정보 가져오기
+    const form = document.getElementById('paymentForm');
+    const formData = new FormData(form);
+
+    // 서버로 결제 정보 전송
+    fetch('{% url "kiosk:process_order" %}', {
+      method: 'POST',
+      body: formData,
+    })
+    .then(response => {
+        return response.text(); // 텍스트 형식의 응답을 받음
+    })
+    .then(data => {
+        alert(data); // 결과를 경고창으로 표시
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+    });
+});
+
+  // 주문 버튼 클릭 시의 동작
+  const orderBtns = document.querySelectorAll('.order-btn');
+  orderBtns.forEach(btn => {
+    btn.addEventListener('click', (event) => {
+      event.preventDefault(); // 기본 동작(페이지 이동) 방지
+
+      // 해당 주문 정보 가져오기
+      const menuId = btn.dataset.menuId;
+      const form = document.getElementById(`orderForm${menuId}`);
+      const formData = new FormData(form);
+
+      // 서버로 해당 주문 정보 전송
+      fetch('{% url "kiosk:add_to_cart" %}', {
+        method: 'POST',
+        body: formData,
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Network response was not ok');
+        }
+        return response.text(); // 텍스트 형식의 응답을 받음
+      })
+      .then(data => {
+        alert(data); // 결과를 경고창으로 표시
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        alert('Error: ' + error.message);
+      });
+    });
+  });
+</script>
+  
+
+{% endblock %}
