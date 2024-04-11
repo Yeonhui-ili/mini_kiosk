@@ -43,7 +43,9 @@
   <hr>
 
   <h3>주문 내역</h3>
-  <div id="liveAlertPlaceholder"></div>
+  <div id="liveAlertPlaceholder">
+    <!-- 주문 내역을 동적으로 추가할 위치 -->
+  </div>
   <ul id="orderList">
     <!-- 주문 내역을 동적으로 추가할 위치 -->
   </ul>
@@ -53,17 +55,21 @@
     {% endfor %}
   </ul>
   <p id="totalPrice">총 가격: {{ total_price }}원</p>
-  <!-- <form method="POST" action="{% url 'kiosk:process_order' %}"> -->
+  
+  <br>
+
   <form id="paymentForm">
-    {% csrf_token %}
-    <button type="submit" class="btn btn-primary" id="paymentBtn">
-      결제하기
-    </button>
+  {% csrf_token %}
+  <button type="submit" class="btn btn-primary" id="paymentBtn">
+    결제하기
+  </button>
   </form>
+
 </div>
 
 
 <script>
+// 주문하기 버튼 누르면 카트(세션)에 정보 저장
 document.addEventListener('DOMContentLoaded', function() {
     const orderButtons = document.querySelectorAll('[id^="orderBtn_"]');
 
@@ -75,6 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('orderForm_' + formId);
             const formData = new FormData(form);
 
+            // 장바구니 추가 성공 여부등을 표시
             fetch('{% url "kiosk:add_to_cart" %}', {
                 method: 'POST',
                 body: formData,
@@ -89,66 +96,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.error('Error:', error);
                 alert('Error: ' + error.message);
             });
+
+            // 주문 내역을 가져와서 화면에 출력
+            fetch('{% url "kiosk:get_order_info" %}')
+            .then(response => response.json())
+            .then(data => {
+                const orderItems = data.order_items;
+                const totalPrice = data.total_price;
+
+                // 주문 내역을 화면에 출력
+                const orderList = document.getElementById('orderList');
+                orderList.innerHTML = ''; // 기존의 주문 내역을 모두 지우고 새로운 주문 내역을 추가
+                orderItems.forEach(item => {
+                    const listItem = document.createElement('li');
+                    listItem.textContent = `${item.menu}: ${item.quantity}개`;
+                    orderList.appendChild(listItem);
+                });
+
+                // 총 가격 업데이트
+                document.getElementById('totalPrice').textContent = `총 가격: ${totalPrice}원`;
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error: ' + error.message);
+            });
         });
     });
 });
-  // 결제하기 버튼 클릭 시의 동작
-  const paymentBtn = document.getElementById('paymentBtn');
-  paymentBtn.addEventListener('click', (event) => {
-    event.preventDefault(); // 기본 동작(페이지 이동) 방지
 
-    // 결제 정보 가져오기
-    const form = document.getElementById('paymentForm');
-    const formData = new FormData(form);
 
-    // 서버로 결제 정보 전송
-    fetch('{% url "kiosk:process_order" %}', {
-      method: 'POST',
-      body: formData,
-    })
-    .then(response => {
-        return response.text(); // 텍스트 형식의 응답을 받음
-    })
-    .then(data => {
-        alert(data); // 결과를 경고창으로 표시
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error: ' + error.message);
-    });
+// 결제하기 버튼 클릭 시의 동작
+const paymentBtn = document.getElementById('paymentBtn');
+paymentBtn.addEventListener('click', (event) => {
+  event.preventDefault(); // 기본 동작(페이지 이동) 방지
+
+  // 결제 정보 가져오기
+  const form = document.getElementById('paymentForm');
+  const formData = new FormData(form);
+
+  // 서버로 결제 정보 전송
+  fetch('{% url "kiosk:process_order" %}', {
+    method: 'POST',
+    body: formData,
+  })
+  .then(response => {
+      return response.text(); // 텍스트 형식의 응답을 받음
+  })
+  .then(data => {
+      alert(data); // 결과를 경고창으로 표시
+  })
+  .catch(error => {
+      console.error('Error:', error);
+      alert('Error: ' + error.message);
+  });
 });
 
-  // 주문 버튼 클릭 시의 동작
-  const orderBtns = document.querySelectorAll('.order-btn');
-  orderBtns.forEach(btn => {
-    btn.addEventListener('click', (event) => {
-      event.preventDefault(); // 기본 동작(페이지 이동) 방지
+// 실시간 장바구니 보여주기
 
-      // 해당 주문 정보 가져오기
-      const menuId = btn.dataset.menuId;
-      const form = document.getElementById(`orderForm${menuId}`);
-      const formData = new FormData(form);
-
-      // 서버로 해당 주문 정보 전송
-      fetch('{% url "kiosk:add_to_cart" %}', {
-        method: 'POST',
-        body: formData,
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Network response was not ok');
-        }
-        return response.text(); // 텍스트 형식의 응답을 받음
-      })
-      .then(data => {
-        alert(data); // 결과를 경고창으로 표시
-      })
-      .catch(error => {
-        console.error('Error:', error);
-        alert('Error: ' + error.message);
-      });
-    });
-  });
 </script>
   
 

@@ -19,21 +19,23 @@ class AddToCartView(View):
 
         print("Received menu_id:", menu_id)
         print("Received quantity:", quantity)
-
-        # 세션 처리 부분 디버깅 출력
-        print("Before adding to cart, session:", request.session.get('cart'))
-    
+ 
+        # 기존 카트 데이터 가져오기
+        cart = request.session.get('cart', {})
 
         if menu_id and quantity:
             try:
                 menu = Menu.objects.get(pk=menu_id)
-                if 'cart' not in request.session:
-                    request.session['cart'] = {}
+                # if 'cart' not in request.session:
+                #     request.session['cart'] = {}
                 
-                if menu_id in request.session['cart']:
-                    request.session['cart'][menu_id]['quantity'] += int(quantity)
+                if menu_id in cart:
+                    cart[menu_id]['quantity'] += int(quantity)
                 else:
-                    request.session['cart'][menu_id] = {'quantity': int(quantity), 'menu': menu.menu, 'price': menu.price}
+                    cart[menu_id] = {'quantity': int(quantity), 'menu': menu.menu, 'price': menu.price}
+
+                # 세션에 업데이트된 카트 데이터 저장
+                request.session['cart'] = cart
 
                 print("After adding to cart, session:", request.session.get('cart'))
                 

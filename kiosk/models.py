@@ -31,9 +31,9 @@ class OrderItem(models.Model):
 @receiver(post_save, sender=OrderItem)
 @receiver(post_delete, sender=OrderItem)
 def update_order_total_items(sender, instance, **kwargs):
-    # 주문의 총 항목 수 계산
+    # 주문의 총 모든 항목의 수량을 합산
     order = instance.order
-    total_items = order.orderitem_set.count()
+    total_items = sum(item.quantity for item in order.orderitem_set.all())
     order.total_items = total_items
     order.save()
 
