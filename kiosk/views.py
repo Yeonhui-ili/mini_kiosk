@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from .models import Menu, Order, OrderItem
 from .forms import OrderForm
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.views.generic import ListView, DetailView
 from django.views import View
 
@@ -44,6 +44,30 @@ class AddToCartView(View):
                 return HttpResponse(status=400, content="Error: 잘못된 메뉴입니다.")
         else:
             return HttpResponse(status=400, content="Error: 메뉴와 수량을 모두 선택해주세요.")
+
+class GetOrderInfo(View):
+    def get(self, request):
+        # 세션에서 현재 사용자의 주문 항목들을 가져오기
+        cart = request.session.get('cart', {})
+        
+        # 주문 항목 리스트 초기화
+        order_items = []
+        total_price = 0
+        
+        # 카트에서 각 주문 항목의 정보 가져오기
+        for menu_id, item_data in cart.items():
+            menu = Menu.objects.get(pk=menu_id)
+            quantity = item_data['quantity']
+            order_items.append({'menu': menu.menu, 'quantity': quantity})
+            total_price += menu.price * quantity
+        
+        # 주문 정보를 JSON 형태로 반환
+        data = {
+            'order_items': order_items,
+            'total_price': total_price,
+        }
+        return JsonResponse(data)
+
 
 class ProcessOrderView(View):
     def post(self, request):

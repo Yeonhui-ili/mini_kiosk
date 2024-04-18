@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('orderForm_' + formId);
             const formData = new FormData(form);
 
-            // 장바구니 추가 성공 여부등을 표시
+            // 장바구니 추가 성공여부 등을 표시
             fetch('{% url "kiosk:add_to_cart" %}', {
                 method: 'POST',
                 body: formData,
@@ -98,8 +98,15 @@ document.addEventListener('DOMContentLoaded', function() {
             });
 
             // 주문 내역을 가져와서 화면에 출력
-            fetch('{% url "kiosk:get_order_info" %}')
-            .then(response => response.json())
+            fetch('{% url "kiosk:get_order_info" %}', {
+                method: 'GET'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
             .then(data => {
                 const orderItems = data.order_items;
                 const totalPrice = data.total_price;
